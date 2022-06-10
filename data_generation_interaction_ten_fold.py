@@ -6,7 +6,43 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import os
+import warnings
+from scipy import sparse as sp
 ####################  get the whole training dataset
+
+def normalized_adjacency(A, symmetric=True):
+    r"""
+    Normalizes the given adjacency matrix using the degree matrix as either
+    \(\D^{-1}\A\) or \(\D^{-1/2}\A\D^{-1/2}\) (symmetric normalization).
+    :param A: rank 2 array or sparse matrix;
+    :param symmetric: boolean, compute symmetric normalization;
+    :return: the normalized adjacency matrix.
+    """
+    if symmetric:
+        normalized_D = degree_power(A, -0.5)
+        return normalized_D.dot(A).dot(normalized_D)
+    else:
+        normalized_D = degree_power(A, -1.0)
+        return normalized_D.dot(A)
+
+def degree_power(A, k):
+    r"""
+    Computes \(\D^{k}\) from the given adjacency matrix. Useful for computing
+    normalised Laplacian.
+    :param A: rank 2 array or sparse matrix.
+    :param k: exponent to which elevate the degree matrix.
+    :return: if A is a dense array, a dense array; if A is sparse, a sparse
+    matrix in DIA format.
+    """
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        degrees = np.power(np.array(A.sum(1)), k).ravel()
+    degrees[np.isinf(degrees)] = 0.0
+    if sp.issparse(A):
+        D = sp.diags(degrees)
+    else:
+        D = np.diag(degrees)
+    return D
 
 current_path = os.path.abspath('.')
 cortex_svz_cellcentroids = pd.read_csv(current_path+'/seqfish_plus/cortex_svz_cellcentroids.csv')
@@ -33,9 +69,13 @@ for view_num in range(7):
 
 # np.save(current_path+'/seqfish_plus/distance_array.npy',np.array(distance_list_list))
 ###try different distance threshold, so that on average, each cell has x neighbor cells, see Tab. S1 for results
+print(1)
 from scipy import sparse
+print(2)
 import pickle
-import spektral
+print(3)
+#import spektral
+print(4)
 import scipy.linalg
 distance_array = np.array(distance_list_list)
 for threshold in [140]:#[100,140,180,210,220,260]:#range (210,211):#(100,400,40):
@@ -64,7 +104,7 @@ for threshold in [140]:#[100,140,180,210,220,260]:#range (210,211):#(100,400,40)
                                                                 distance_matrix_threshold_I_list[5],
                                                                 distance_matrix_threshold_I_list[6])
     ############### get normalized sparse adjacent matrix
-    distance_matrix_threshold_I_N = spektral.utils.normalized_adjacency(whole_distance_matrix_threshold_I, symmetric=True)
+    distance_matrix_threshold_I_N = normalized_adjacency(whole_distance_matrix_threshold_I)
     # distance_matrix_threshold_I_N = np.float32(whole_distance_matrix_threshold_I) ## do not normalize adjcent matrix
     distance_matrix_threshold_I_N = np.float32(whole_distance_matrix_threshold_I)
     distance_matrix_threshold_I_N_crs = sparse.csr_matrix(distance_matrix_threshold_I_N)
@@ -73,7 +113,7 @@ for threshold in [140]:#[100,140,180,210,220,260]:#range (210,211):#(100,400,40)
     distance_matrix_threshold_I_N = np.float32(whole_distance_matrix_threshold_I) ## do not normalize adjcent matrix
     distance_matrix_threshold_I_N_crs = sparse.csr_matrix(distance_matrix_threshold_I_N)
     with open(current_path+'/seqfish_plus/whole_FOV_distance_I_N_crs_'+str(threshold), 'wb') as fp:
-        pickle.dump(distance_matrix_threshold_I_Ncrs, fp)
+        pickle.dump(distance_matrix_threshold_I_N, fp)
 #
 # generate graph matrix where each cell only connect itself
 # import spektral
