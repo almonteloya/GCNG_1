@@ -4,7 +4,7 @@ using graph convolutional neural network and spaital transcriptomics data to inf
 # https://genomebiology.biomedcentral.com/articles/10.1186/s13059-020-02214-w
 
 
-># GCNG generate_data
+># generate data.ipynb
 
 Uses the spatial location data to generate normalized adjacent matrix of cells, and save it in `seqfish_plus` folder; also uses the expression data to generate expression matrix for ten fold cross validation, and save it in `rand_1_10fold` folder.
 
